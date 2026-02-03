@@ -1,0 +1,318 @@
+/* Field Mapping Styles - Extends Base Testcase Styles */
+
+/* Import base styles for consistency */
+@import './styleTestcase_beta.css';
+
+/* Two-Column Layout for Field Mapping */
+.fieldmap-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2rem;
+}
+
+/* Left Content Column */
+.fieldmap-main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Right Info Panel */
+.fieldmap-info-panel {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  height: fit-content;
+  position: sticky;
+  top: 2rem;
+}
+
+.info-panel-section {
+  margin-bottom: 2rem;
+}
+
+.info-panel-section:last-child {
+  margin-bottom: 0;
+}
+
+.info-panel-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #f97316;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-panel-description {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  line-height: 1.5;
+}
+
+/* Field Chips */
+.field-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.field-chip {
+  padding: 0.375rem 0.75rem;
+  background-color: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  color: #495057;
+  font-family: 'Courier New', monospace;
+}
+
+/* Judge Model Section */
+.judge-model-section {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.judge-model-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.judge-model-description {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin-bottom: 1rem;
+}
+
+/* Auto-Detection Notice */
+.auto-detect-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: rgba(249, 115, 22, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  color: #f97316;
+}
+
+.auto-detect-notice svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Mapping Fields Section */
+.mapping-fields-section {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+.mapping-fields-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.mapping-field-group {
+  margin-bottom: 1.5rem;
+}
+
+.mapping-field-group:last-child {
+  margin-bottom: 0;
+}
+
+.mapping-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.mapping-required {
+  color: #ef4444;
+}
+
+.mapping-tooltip {
+  position: relative;
+  display: inline-flex;
+  cursor: help;
+}
+
+.mapping-tooltip-icon {
+  width: 14px;
+  height: 14px;
+  color: #6b7280;
+}
+
+.mapping-tooltip:hover .mapping-tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.mapping-tooltip-text {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  z-index: 10;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #495057;
+  color: #ffffff;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  width: 200px;
+  transition: opacity 0.2s;
+  border: 1px solid #6c757d;
+  font-weight: normal;
+  line-height: 1.4;
+}
+
+.mapping-tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #495057 transparent transparent transparent;
+}
+
+/* Dropdown with placeholder styling */
+.mapping-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  color: #1a1a1a;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+}
+
+.mapping-select:focus {
+  border-color: #f97316;
+}
+
+.mapping-select.not-available {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.mapping-select option {
+  background-color: #ffffff;
+  color: #1a1a1a;
+}
+
+.mapping-select option[disabled] {
+  color: #6b7280;
+}
+
+/* Dataset Info Banner */
+.dataset-info-banner {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dataset-info-icon {
+  width: 40px;
+  height: 40px;
+  background-color: rgba(249, 115, 22, 0.1);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dataset-info-icon svg {
+  width: 20px;
+  height: 20px;
+  color: #f97316;
+}
+
+.dataset-info-content {
+  flex: 1;
+}
+
+.dataset-info-name {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.dataset-info-meta {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* Refresh Button */
+.refresh-button {
+  background: none;
+  border: none;
+  color: #f97316;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.refresh-button:hover {
+  color: #ea580c;
+}
+
+.refresh-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.refresh-button.spinning svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1280px) {
+  .fieldmap-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldmap-info-panel {
+    position: relative;
+    top: 0;
+  }
+}

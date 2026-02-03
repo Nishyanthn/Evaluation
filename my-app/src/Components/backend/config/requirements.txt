@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-multipart
+
+deepeval
+
+pandas
+openpyxl
+
+httpx
+python-dotenv
+pydantic
+openai

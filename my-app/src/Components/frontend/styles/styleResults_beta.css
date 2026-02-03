@@ -1,0 +1,489 @@
+/* Results Page Styles */
+
+.error-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 1rem;
+  text-align: center;
+}
+
+.error-icon {
+  width: 64px;
+  height: 64px;
+  color: #ef4444;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #374151;
+}
+
+.results-timestamp {
+  font-size: 0.875rem;
+  color: #000000;
+  margin-top: 0.5rem;
+}
+
+/* Summary Grid */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+  border: 1px solid #000000;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: all 0.3s;
+}
+
+.summary-card:hover {
+  border-color: #f97316;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.15);
+}
+
+.summary-card-large {
+  grid-column: span 2;
+  min-width: 250px;
+}
+
+.summary-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.summary-icon {
+  width: 20px;
+  height: 20px;
+  color: #f97316;
+}
+
+.summary-label {
+  font-size: 0.875rem;
+  color: #000000;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summary-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #575454;
+  margin-bottom: 0.25rem;
+}
+
+.summary-value-large {
+  font-size: 3.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.summary-subtitle {
+  font-size: 0.875rem;
+  color: #000000;
+}
+
+/* Score Bar */
+.score-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #000000;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease-out;
+  animation: fillAnimation 1s ease-out;
+}
+
+@keyframes fillAnimation {
+  from {
+    width: 0%;
+  }
+}
+
+/* Metrics Section */
+.metrics-section {
+  margin-bottom: 2rem;
+}
+
+.section-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #000000;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.metric-card {
+  background-color: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: all 0.2s;
+}
+
+.metric-card:hover {
+  border-color: #f97316;
+  background-color: rgba(249, 115, 22, 0.05);
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.metric-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #000000;
+}
+
+.metric-score {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.metric-bar {
+  width: 100%;
+  height: 6px;
+  background-color: #000000;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.metric-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s ease-out;
+}
+
+/* Test Results Section */
+.test-results-section {
+  margin-bottom: 2rem;
+}
+
+.test-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.test-result-card {
+  background-color: #fcfcfc;
+  border: 1px solid #000000;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.test-result-card:hover {
+  border-color: #f97316;
+}
+
+.test-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.test-result-header:hover {
+  background-color: rgba(249, 115, 22, 0.05);
+}
+
+.test-result-info {
+  flex: 1;
+}
+
+.test-result-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.status-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.status-icon-success {
+  color: #10b981;
+}
+
+.status-icon-error {
+  color: #ef4444;
+}
+
+.test-result-title {
+  font-weight: 600;
+  color: #000000;
+}
+
+.test-result-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.test-result-query {
+  color: #000000;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-left: 2rem;
+}
+
+.test-result-score-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.test-result-score {
+  font-size: 1.5rem;
+  font-weight: bold;
+  min-width: 80px;
+  text-align: right;
+}
+
+.expand-icon {
+  width: 20px;
+  height: 20px;
+  color: #000000;
+  transition: transform 0.2s;
+}
+
+/* Test Details (Expanded) */
+.test-result-details {
+  padding: 1.5rem;
+  background-color: #f2f2f2;
+  border-top: 1px solid #374151;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+  }
+}
+
+/* Comparison Grid */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.comparison-section {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.comparison-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.comparison-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #d1d5db;
+}
+
+.comparison-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.comparison-badge-actual {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.comparison-badge-expected {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.comparison-content {
+  color: #d1d5db;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background-color: #0f172a;
+  border-radius: 0.375rem;
+}
+
+/* Test Metrics */
+.test-metrics {
+  margin-bottom: 1.5rem;
+}
+
+.test-metrics-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.test-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.test-metric-item {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+}
+
+.test-metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.test-metric-name {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.test-metric-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.test-metric-bar {
+  width: 100%;
+  height: 4px;
+  background-color: #374151;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.test-metric-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s ease-out;
+}
+
+/* Test Context */
+.test-context {
+  margin-top: 1.5rem;
+}
+
+.test-context-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #d1d5db;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.test-context-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.test-context-item {
+  background-color: #e8e8e9;
+  border: 1px solid #374151;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  color: #d1d5db;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .summary-card-large {
+    grid-column: span 1;
+  }
+
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .test-result-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .test-result-score-container {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Animations */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.summary-card-large .summary-value-large {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
