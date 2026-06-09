@@ -24,6 +24,23 @@ export default function TestcaseBeta({ onComplete, initialDataset }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedDataset, setGeneratedDataset] = useState(null);
 
+  // Test scenario tags for LLM generation
+  const SCENARIO_OPTIONS = [
+    { value: 'happy_path', label: 'Happy Path' },
+    { value: 'angry_customer', label: 'Angry Customer' },
+    { value: 'multi_turn', label: 'Multi-turn Follow-ups' },
+    { value: 'out_of_scope', label: 'Out-of-scope Deflections' },
+    { value: 'sensitive_topics', label: 'Sensitive Topics' },
+    { value: 'edge_cases', label: 'Edge Cases' },
+  ];
+  const [selectedScenarios, setSelectedScenarios] = useState([]);
+
+  const toggleScenario = (value) => {
+    setSelectedScenarios(prev =>
+      prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value]
+    );
+  };
+
   const navigate = useNavigate();
 
 
@@ -58,6 +75,9 @@ export default function TestcaseBeta({ onComplete, initialDataset }) {
       formData.append('modelName', llmModel);
       formData.append('numTestCases', numTestCases.toString());
       formData.append('customPrompt', customPrompt);
+      if (selectedScenarios.length > 0) {
+        formData.append('scenarios', selectedScenarios.join(','));
+      }
 
       // Add KB files
       kbFiles.forEach(file => {
@@ -387,6 +407,9 @@ export default function TestcaseBeta({ onComplete, initialDataset }) {
             {/* Manual Upload Section */}
             {selectedOption === 'manual' && (
               <div className="section-content">
+                <p className="form-hint" style={{marginBottom: '1rem'}}>
+                  Tip: include a <code>scenario</code> column in your file (e.g. <em>happy_path</em>, <em>angry_customer</em>) to enable per-scenario failure analysis in results.
+                </p>
                 <button onClick={() => setUploadModalOpen(true)} className="btn-primary">
                   Upload New Dataset
                 </button>
@@ -563,6 +586,26 @@ export default function TestcaseBeta({ onComplete, initialDataset }) {
                     />
                     <div className="form-hint">
                       Give the LLM specific instructions on what kind of test datas to generate
+                    </div>
+                  </div>
+
+                  {/* Test Scenarios */}
+                  <div className="form-group">
+                    <label className="form-label">Test Scenarios (Optional)</label>
+                    <p className="form-hint" style={{marginBottom: '0.5rem'}}>
+                      Tag the generated test cases by scenario type. Enables failure analysis by scenario in results.
+                    </p>
+                    <div className="scenario-tags">
+                      {SCENARIO_OPTIONS.map(s => (
+                        <button
+                          key={s.value}
+                          type="button"
+                          className={`scenario-tag ${selectedScenarios.includes(s.value) ? 'scenario-tag-active' : ''}`}
+                          onClick={() => toggleScenario(s.value)}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
                     </div>
                   </div>
 

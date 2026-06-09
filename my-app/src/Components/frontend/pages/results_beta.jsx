@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   CheckCircle, XCircle, AlertCircle, TrendingUp, TrendingDown,
-  Activity, BarChart3, Eye, Download, ChevronDown, ChevronUp
+  Activity, BarChart3, Eye, Download, ChevronDown, ChevronUp,
+  MessageSquare, Users
 } from 'lucide-react';
 import '../styles/styleTestcase_beta.css';
 import '../styles/styleResults_beta.css';
@@ -36,13 +37,16 @@ export default function ResultsBeta() {
     overallScore,
     testResults,
     timestamp,
-    tokenUsage
+    tokenUsage,
+    reviewQueueCount,
+    evaluationId,
   } = evaluationResults;
 
   // Calculate statistics
   const passedTests = testResults.filter(t => t.passed).length;
   const failedTests = completedTests - passedTests;
   const passRate = completedTests > 0 ? (passedTests / completedTests) * 100 : 0;
+  const reviewCount = reviewQueueCount ?? testResults.filter(t => t.needs_human_review).length;
 
   // Get metric names from first test case
   const metricNames = testResults[0]?.metric_scores ? Object.keys(testResults[0].metric_scores) : [];
@@ -57,6 +61,28 @@ export default function ResultsBeta() {
       ? scores.reduce((a, b) => a + b, 0) / scores.length
       : 0;
   });
+
+  // Failure analysis: group failed tests by scenario
+  const failedCompleted = testResults.filter(t => t.status === 'completed' && !t.passed);
+  const scenarioFailMap = {};
+  failedCompleted.forEach(t => {
+    const scenario = t.scenario || 'Untagged';
+    if (!scenarioFailMap[scenario]) scenarioFailMap[scenario] = { count: 0, scores: [] };
+    scenarioFailMap[scenario].count += 1;
+    scenarioFailMap[scenario].scores.push(t.score);
+  });
+  const scenarioFailures = Object.entries(scenarioFailMap)
+    .map(([name, d]) => ({
+      name,
+      count: d.count,
+      avgScore: d.scores.reduce((a, b) => a + b, 0) / d.scores.length,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // Weakest metric
+  const weakestMetric = metricNames.length > 0
+    ? metricNames.reduce((a, b) => avgMetricScores[a] < avgMetricScores[b] ? a : b)
+    : null;
 
   const toggleTestCase = (index) => {
     setExpandedTestCase(expandedTestCase === index ? null : index);
@@ -164,10 +190,21 @@ export default function ResultsBeta() {
                 <h2 className="section-title">{evaluationName}</h2>
                 <p className="results-timestamp">Completed on {new Date(timestamp).toLocaleString()}</p>
               </div>
-              <button onClick={handleDownloadResults} className="btn-download">
-                <Download className="icon-sm" />
-                Export Results
-              </button>
+              <div style={{display:'flex', gap:'0.75rem', alignItems:'center'}}>
+                {reviewCount > 0 && (
+                  <button
+                    onClick={() => navigate('/human-review')}
+                    className="btn-review-queue"
+                  >
+                    <Users size={16} />
+                    Review Queue ({reviewCount})
+                  </button>
+                )}
+                <button onClick={handleDownloadResults} className="btn-download">
+                  <Download className="icon-sm" />
+                  Export Results
+                </button>
+              </div>
             </div>
 
             {/* Overall Summary Cards */}
@@ -264,6 +301,52 @@ export default function ResultsBeta() {
               </div>
             </div>
 
+            {/* Failure Analysis */}
+            {(scenarioFailures.length > 0 || weakestMetric) && (
+              <div className="metrics-section">
+                <h3 className="section-subtitle">
+                  <TrendingDown className="icon-sm" style={{color:'#ef4444'}} />
+                  Failure Analysis
+                </h3>
+
+                {weakestMetric && (
+                  <div className="failure-insight">
+                    <AlertCircle size={16} style={{color:'#f59e0b', flexShrink:0}} />
+                    <span>
+                      Weakest metric: <strong>{weakestMetric}</strong> averaging{' '}
+                      <strong style={{color: getScoreColor(avgMetricScores[weakestMetric])}}>
+                        {(avgMetricScores[weakestMetric] * 100).toFixed(1)}%
+                      </strong>
+                      . Consider reviewing the knowledge base coverage for related topics.
+                    </span>
+                  </div>
+                )}
+
+                {scenarioFailures.length > 0 && (
+                  <div className="scenario-fail-list">
+                    <p style={{fontSize:'0.8rem', color:'#6b7280', marginBottom:'0.5rem'}}>
+                      Failed tests by scenario:
+                    </p>
+                    {scenarioFailures.map(s => (
+                      <div key={s.name} className="scenario-fail-row">
+                        <span className="scenario-fail-name">{s.name.replace(/_/g, ' ')}</span>
+                        <span className="scenario-fail-count">{s.count} failed</span>
+                        <div className="metric-bar" style={{flex:1, margin:'0 0.75rem'}}>
+                          <div
+                            className="metric-bar-fill"
+                            style={{width:`${s.avgScore*100}%`, backgroundColor: getScoreColor(s.avgScore)}}
+                          />
+                        </div>
+                        <span style={{fontSize:'0.8rem', fontWeight:600, color: getScoreColor(s.avgScore)}}>
+                          {(s.avgScore*100).toFixed(0)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Individual Test Results */}
             <div className="test-results-section">
               <h3 className="section-subtitle">
@@ -296,6 +379,16 @@ export default function ResultsBeta() {
                           >
                             {test.passed ? 'PASSED' : 'FAILED'}
                           </span>
+                          {test.needs_human_review && (
+                            <span className="test-result-badge" style={{backgroundColor:'rgba(245,158,11,0.1)', color:'#d97706'}}>
+                              REVIEW
+                            </span>
+                          )}
+                          {test.scenario && (
+                            <span className="test-result-badge" style={{backgroundColor:'#eff6ff', color:'#2563eb'}}>
+                              {test.scenario.replace(/_/g, ' ')}
+                            </span>
+                          )}
                         </div>
                         <div className="test-result-query">{test.user_query}</div>
                       </div>
@@ -340,33 +433,41 @@ export default function ResultsBeta() {
                           </div>
                         </div>
 
-                        {/* Metric Scores */}
+                        {/* Metric Scores + Reasoning */}
                         {test.metric_scores && (
                           <div className="test-metrics">
-                            <h4 className="test-metrics-title">Detailed Metrics</h4>
+                            <h4 className="test-metrics-title">
+                              <MessageSquare size={14} /> Detailed Metrics &amp; Judge Reasoning
+                            </h4>
                             <div className="test-metrics-grid">
-                              {Object.entries(test.metric_scores).map(([metric, score]) => (
-                                <div key={metric} className="test-metric-item">
-                                  <div className="test-metric-header">
-                                    <span className="test-metric-name">{metric}</span>
-                                    <span
-                                      className="test-metric-value"
-                                      style={{color: getScoreColor(score)}}
-                                    >
-                                      {(score * 100).toFixed(1)}%
-                                    </span>
+                              {Object.entries(test.metric_scores).map(([metric, score]) => {
+                                const reason = (test.metric_reasoning || {})[metric] || '';
+                                return (
+                                  <div key={metric} className="test-metric-item">
+                                    <div className="test-metric-header">
+                                      <span className="test-metric-name">{metric}</span>
+                                      <span
+                                        className="test-metric-value"
+                                        style={{color: getScoreColor(score)}}
+                                      >
+                                        {(score * 100).toFixed(1)}%
+                                      </span>
+                                    </div>
+                                    <div className="test-metric-bar">
+                                      <div
+                                        className="test-metric-bar-fill"
+                                        style={{
+                                          width: `${score * 100}%`,
+                                          backgroundColor: getScoreColor(score)
+                                        }}
+                                      />
+                                    </div>
+                                    {reason && (
+                                      <div className="metric-reasoning-text">{reason}</div>
+                                    )}
                                   </div>
-                                  <div className="test-metric-bar">
-                                    <div
-                                      className="test-metric-bar-fill"
-                                      style={{
-                                        width: `${score * 100}%`,
-                                        backgroundColor: getScoreColor(score)
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         )}

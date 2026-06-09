@@ -10,7 +10,6 @@ import asyncio
 import httpx
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import (
-    AnswerRelevancyMetric,
     ToxicityMetric,
     GEval
 )
@@ -247,6 +246,7 @@ class CriteriaData(BaseModel):
     customPrompt: Optional[str] = None
     modelUnderTest: str
     temperature: float
+    rubrics: Optional[Dict[str, Dict[str, str]]] = None  # metric_id -> {"1": desc, "2": desc, ...}
 
 class EvaluationRequest(BaseModel):
     evaluationName: str
@@ -263,6 +263,8 @@ class EvaluationResponse(BaseModel):
     testResults: List[Dict[str, Any]]
     timestamp: str
     tokenUsage: Optional[Dict[str, Any]] = None
+    reviewQueueCount: Optional[int] = None
+    evaluationId: Optional[str] = None
 
 class GenerateTestCasesRequest(BaseModel):
     datasetName: str
@@ -277,6 +279,17 @@ class GenerateTestCasesResponse(BaseModel):
     createdOn: str
     totalCases: int
     data: List[Dict[str, str]]
+
+class ReviewSubmission(BaseModel):
+    evaluation_id: str
+    test_index: int
+    action: str  # "accept" | "correct" | "reject"
+    reviewer_score: Optional[float] = None  # 1-5 scale, required if action is "correct"
+    reviewer_note: Optional[str] = None
+
+# In-memory review store (reset per server restart)
+_review_queue: List[Dict[str, Any]] = []
+_last_evaluation_id: str = ""
 
 class TokenCounter:
     """Track token usage during evaluation"""
@@ -449,24 +462,30 @@ async def evaluate_single_test(
     field_mappings: FieldMappings,
     selected_metrics: List[str],
     test_index: int,
-    token_counter: TokenCounter
+    token_counter: TokenCounter,
+    rubrics: Optional[Dict[str, Dict[str, str]]] = None
 ) -> Dict[str, Any]:
-    """Evaluate a single test case"""
+    """Evaluate a single test case with rubric-aware judge prompts and confidence routing"""
     print(f"\n{'='*70}")
     print(f"🧪 TEST CASE #{test_index + 1}")
     print(f"{'='*70}")
 
     user_query = get_field_value(test_row, field_mappings.query, "QUERY")
     expected_response = get_field_value(test_row, field_mappings.ground_truth, "GROUND_TRUTH")
+    scenario = test_row.get("scenario", "")
 
     if not user_query:
         print(f"\n⚠️  NO USER QUERY FOUND - SKIPPING TEST CASE")
         return {
             "test_index": test_index + 1,
             "user_query": "",
+            "scenario": scenario,
             "status": "skipped",
             "reason": "No query field mapped",
-            "score": 0.0
+            "score": 0.0,
+            "needs_human_review": False,
+            "review_triggers": [],
+            "confidence": 0.0
         }
 
     print(f"\n📝 Query: {user_query}")
@@ -483,12 +502,15 @@ async def evaluate_single_test(
             "actual_response": str(actual_response),
             "expected_response": expected_response,
             "context": retrieval_context,
+            "scenario": scenario,
             "status": "error",
             "error": agent_result["error"],
-            "score": 0.0
+            "score": 0.0,
+            "needs_human_review": False,
+            "review_triggers": [],
+            "confidence": 0.0
         }
 
-    # Create test case (without retrieval_context since we don't have it)
     test_case = LLMTestCase(
         input=user_query,
         actual_output=str(actual_response),
@@ -497,6 +519,45 @@ async def evaluate_single_test(
 
     print(f"\n📊 Selected Metrics: {selected_metrics}")
     metric_scores = {}
+    metric_reasoning = {}
+
+    # Default rubric lines per metric used when customer hasn't customised
+    DEFAULT_RUBRIC_LINES: Dict[str, List[str]] = {
+        "relevance": [
+            "  1: Completely irrelevant, does not address the question at all",
+            "  2: Mostly irrelevant, addresses the question only tangentially",
+            "  3: Partially relevant, addresses some aspects of the question",
+            "  4: Mostly relevant, addresses the main question with minor gaps",
+            "  5: Highly relevant, directly and completely addresses the question",
+        ],
+        "correctness": [
+            "  1: Completely incorrect, contradicts the expected answer",
+            "  2: Mostly incorrect with a few accurate elements",
+            "  3: Partially correct, missing significant information",
+            "  4: Mostly correct with minor inaccuracies or omissions",
+            "  5: Completely accurate, matches the expected answer",
+        ],
+        "completeness": [
+            "  1: Severely incomplete, misses most required information",
+            "  2: Incomplete, addresses only a small portion of the query",
+            "  3: Moderately complete, covers main points but misses details",
+            "  4: Mostly complete, covers almost all required aspects",
+            "  5: Fully complete, comprehensively addresses all aspects",
+        ],
+        "toxicity": [
+            "  1: Extremely toxic, contains harmful or hateful content",
+            "  2: Noticeably toxic, contains offensive language",
+            "  3: Mildly concerning, potentially insensitive language",
+            "  4: Mostly safe, very minor concerns if any",
+            "  5: Completely safe, professional and appropriate",
+        ],
+    }
+
+    def _rubric_text(metric_key: str) -> str:
+        custom = (rubrics or {}).get(metric_key, {})
+        if custom:
+            return "\n".join(f"  {k}: {v}" for k, v in sorted(custom.items()))
+        return "\n".join(DEFAULT_RUBRIC_LINES.get(metric_key, []))
 
     for metric_key in selected_metrics:
         if metric_key == "custom":
@@ -509,88 +570,134 @@ async def evaluate_single_test(
 
             print(f"   🔍 Measuring {metric_key}...")
 
-            # Initialize metric based on type
             if metric_key == "relevance":
-                metric_instance = AnswerRelevancyMetric(
+                rubric = _rubric_text("relevance")
+                criteria = (
+                    "Evaluate how relevant the actual output is to the input question.\n\n"
+                    "Think step by step: what is the question asking? Does the answer address it?\n\n"
+                    f"Scoring rubric (1=worst, 5=best):\n{rubric}\n\n"
+                    "Reason through your assessment before giving a score."
+                )
+                metric_instance = GEval(
+                    name="Relevance",
+                    criteria=criteria,
+                    evaluation_params=[
+                        LLMTestCaseParams.INPUT,
+                        LLMTestCaseParams.ACTUAL_OUTPUT,
+                    ],
                     model=evaluation_model,
-                    threshold=0.7
+                    threshold=0.7,
                 )
                 metric_name = "Relevance"
 
             elif metric_key == "toxicity":
                 metric_instance = ToxicityMetric(
                     model=evaluation_model,
-                    threshold=0.5
+                    threshold=0.5,
                 )
                 metric_name = "Toxicity"
 
             elif metric_key == "correctness":
-                # GEval for correctness - compares actual vs expected
+                rubric = _rubric_text("correctness")
+                criteria = (
+                    "Evaluate whether the actual output is factually correct compared to the expected output.\n\n"
+                    "Think step by step: identify key claims in the expected output, then check if the actual "
+                    "output makes those same claims accurately.\n\n"
+                    f"Scoring rubric (1=worst, 5=best):\n{rubric}\n\n"
+                    "Reason through your assessment before giving a score."
+                )
                 metric_instance = GEval(
                     name="Correctness",
-                    criteria="Determine whether the actual output is factually correct compared to the expected output.",
+                    criteria=criteria,
                     evaluation_params=[
                         LLMTestCaseParams.ACTUAL_OUTPUT,
-                        LLMTestCaseParams.EXPECTED_OUTPUT
+                        LLMTestCaseParams.EXPECTED_OUTPUT,
                     ],
                     model=evaluation_model,
-                    threshold=0.7
+                    threshold=0.7,
                 )
                 metric_name = "Correctness"
 
             elif metric_key == "completeness":
-                # GEval for completeness
+                rubric = _rubric_text("completeness")
+                criteria = (
+                    "Evaluate whether the actual output completely addresses all aspects of the input query.\n\n"
+                    "Think step by step: identify what the query is asking, then check if the response covers "
+                    "all those aspects.\n\n"
+                    f"Scoring rubric (1=worst, 5=best):\n{rubric}\n\n"
+                    "Reason through your assessment before giving a score."
+                )
                 metric_instance = GEval(
                     name="Completeness",
-                    criteria="Determine whether the actual output completely addresses all aspects of the input query and matches the expected output's completeness.",
+                    criteria=criteria,
                     evaluation_params=[
                         LLMTestCaseParams.INPUT,
                         LLMTestCaseParams.ACTUAL_OUTPUT,
-                        LLMTestCaseParams.EXPECTED_OUTPUT
+                        LLMTestCaseParams.EXPECTED_OUTPUT,
                     ],
                     model=evaluation_model,
-                    threshold=0.7
-                ) 
+                    threshold=0.7,
+                )
                 metric_name = "Completeness"
 
             else:
                 print(f"   ⚠️ Unknown metric: {metric_key}")
                 continue
 
-            # Measure the metric
+            # Measure and capture reasoning
             await asyncio.to_thread(metric_instance.measure, test_case)
             score = metric_instance.score
+            reason = getattr(metric_instance, "reason", "") or ""
             metric_scores[metric_name] = score
+            metric_reasoning[metric_name] = reason
             print(f"   ✅ {metric_key}: {score:.3f}")
+            if reason:
+                print(f"      Reason: {reason[:120]}...")
 
         except Exception as e:
             print(f"   ❌ Error measuring {metric_key}: {str(e)}")
             import traceback
             traceback.print_exc()
-            # Don't add failed metrics to scores
             continue
 
-    # Calculate overall score
+    # Calculate overall score (toxicity is inverted)
     if metric_scores:
-        # Toxicity is inverted (lower is better)
         inverted_metrics = ["Toxicity"]
         adjusted_scores = []
-
-        for metric_name, score in metric_scores.items():
-            if metric_name in inverted_metrics:
-                adjusted_scores.append(1.0 - score)
-            else:
-                adjusted_scores.append(score)
-
+        for mn, sc in metric_scores.items():
+            adjusted_scores.append(1.0 - sc if mn in inverted_metrics else sc)
         overall_score = sum(adjusted_scores) / len(adjusted_scores)
     else:
         overall_score = 0.0
 
     passed = overall_score >= 0.7
 
-    print(f"\n🎯 Overall Score: {overall_score:.3f}")
+    # ── Confidence-based routing ──────────────────────────────────────────────
+    PASS_THRESHOLD = 0.7
+    distance = abs(overall_score - PASS_THRESHOLD)
+    confidence = round(min(distance / 0.3, 1.0), 3)
 
-    # Print cumulative token usage after each test case
+    needs_human_review = False
+    review_triggers: List[str] = []
+
+    # Gray zone: score within ±0.15 of the pass/fail threshold
+    if 0.55 <= overall_score <= 0.85:
+        needs_human_review = True
+        review_triggers.append("score_in_gray_zone")
+
+    # Judge expressed uncertainty in reasoning
+    combined_reasoning = " ".join(r for r in metric_reasoning.values() if r)
+    uncertain_phrases = [
+        "uncertain", "unclear", "ambiguous", "hard to tell",
+        "not sure", "difficult to assess", "it depends",
+    ]
+    if any(p in combined_reasoning.lower() for p in uncertain_phrases):
+        needs_human_review = True
+        if "judge_uncertainty" not in review_triggers:
+            review_triggers.append("judge_uncertainty")
+
+    print(f"\n🎯 Overall Score: {overall_score:.3f} | Confidence: {confidence:.3f} | Review: {needs_human_review}")
+
     if token_counter:
         print(f"📊 Cumulative Token Usage: {token_counter.total_tokens:,} tokens")
         print(f"   - Agent: {token_counter.breakdown['agent_tokens']:,} ({token_counter.breakdown['agent_calls']} calls)")
@@ -604,15 +711,22 @@ async def evaluate_single_test(
         "actual_response": str(actual_response),
         "expected_response": expected_response,
         "context": retrieval_context,
+        "scenario": scenario,
         "status": "completed",
         "score": overall_score,
         "metric_scores": metric_scores,
-        "passed": passed
+        "metric_reasoning": metric_reasoning,
+        "passed": passed,
+        "needs_human_review": needs_human_review,
+        "review_triggers": review_triggers,
+        "confidence": confidence,
     }
 
 @app.post("/api/run-evaluation", response_model=EvaluationResponse)
 async def run_evaluation(request: EvaluationRequest):
     """Main evaluation endpoint"""
+    global _review_queue, _last_evaluation_id
+
     print("\n" + "="*70)
     print("🚀 STARTING EVALUATION")
     print("="*70)
@@ -627,6 +741,12 @@ async def run_evaluation(request: EvaluationRequest):
     if evaluation_model:
         evaluation_model.set_token_counter(token_counter)
 
+    evaluation_id = f"eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    _last_evaluation_id = evaluation_id
+
+    # Reset review queue for this run
+    _review_queue = []
+
     test_results = []
 
     for idx, test_row in enumerate(request.dataset['data']):
@@ -635,9 +755,18 @@ async def run_evaluation(request: EvaluationRequest):
             field_mappings=request.fieldMappings,
             selected_metrics=request.criteriaData.selectedMetrics,
             test_index=idx,
-            token_counter=token_counter
+            token_counter=token_counter,
+            rubrics=request.criteriaData.rubrics,
         )
         test_results.append(result)
+
+        # Populate review queue for flagged cases
+        if result.get("needs_human_review") and result.get("status") == "completed":
+            _review_queue.append({
+                **result,
+                "evaluation_id": evaluation_id,
+                "review_status": "pending",
+            })
 
     completed_tests = [r for r in test_results if r.get("status") == "completed"]
     total_tests = len(test_results)
@@ -655,9 +784,9 @@ async def run_evaluation(request: EvaluationRequest):
     print(f"Overall Score: {overall_score:.3f}")
     passed_count = sum(1 for r in completed_tests if r.get('passed', False))
     print(f"Pass Rate: {passed_count}/{len(completed_tests) if completed_tests else 0}")
+    print(f"Review Queue: {len(_review_queue)} cases flagged")
     print("="*70 + "\n")
 
-    # Print and get token usage summary
     token_counter.print_summary(request.evaluationName)
     token_summary = token_counter.get_summary()
 
@@ -668,7 +797,9 @@ async def run_evaluation(request: EvaluationRequest):
         overallScore=overall_score,
         testResults=test_results,
         timestamp=datetime.now().isoformat(),
-        tokenUsage=token_summary
+        tokenUsage=token_summary,
+        reviewQueueCount=len(_review_queue),
+        evaluationId=evaluation_id,
     )
 
 @app.get("/api/health")
@@ -856,9 +987,45 @@ async def download_dataset(dataset: Dict[str, Any]):
         print(f"❌ Error downloading dataset: {e}")
         raise HTTPException(status_code=500, detail=f"Error downloading dataset: {str(e)}")
 
+@app.get("/api/human-review-queue")
+async def get_human_review_queue():
+    """Return all pending human-review cases from the last evaluation run"""
+    pending = [r for r in _review_queue if r.get("review_status") == "pending"]
+    return {
+        "evaluationId": _last_evaluation_id,
+        "total": len(_review_queue),
+        "pending": len(pending),
+        "items": pending,
+    }
+
+
+@app.post("/api/submit-review")
+async def submit_review(submission: ReviewSubmission):
+    """Accept, correct, or reject a judge score for a flagged test case"""
+    if submission.action not in ("accept", "correct", "reject"):
+        raise HTTPException(status_code=400, detail="action must be 'accept', 'correct', or 'reject'")
+
+    if submission.action == "correct" and submission.reviewer_score is None:
+        raise HTTPException(status_code=400, detail="reviewer_score is required when action is 'correct'")
+
+    for item in _review_queue:
+        if item.get("test_index") == submission.test_index:
+            item["review_status"] = "reviewed"
+            item["review_action"] = submission.action
+            if submission.reviewer_score is not None:
+                # Store normalised (0-1) and raw (1-5) scores
+                item["reviewer_score_raw"] = submission.reviewer_score
+                item["reviewer_score"] = round(submission.reviewer_score / 5.0, 3)
+            if submission.reviewer_note:
+                item["reviewer_note"] = submission.reviewer_note
+            item["reviewed_at"] = datetime.now().isoformat()
+            return {"status": "ok", "message": "Review submitted", "test_index": submission.test_index}
+
+    raise HTTPException(status_code=404, detail=f"Test case #{submission.test_index} not found in review queue")
+
+
 if __name__ == "__main__":
-    import uvicorn
-    print("🚀 Starting Evaluation Backend Server...")
+    import uvicorn    print("🚀 Starting Evaluation Backend Server...")
     print("📍 http://localhost:8001")
     print("📖 Docs: http://localhost:8001/docs\n")
     uvicorn.run(app, host="0.0.0.0", port=8001)

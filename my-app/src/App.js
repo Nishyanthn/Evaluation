@@ -7,6 +7,7 @@ import FieldMapBeta from './Components/frontend/pages/fieldmap_beta.jsx';
 import CriteriaBeta from './Components/frontend/pages/criteria_beta.jsx';
 import ReviewBeta from './Components/frontend/pages/review_beta.jsx';
 import ResultsBeta from './Components/frontend/pages/results_beta.jsx';
+import HumanReviewBeta from './Components/frontend/pages/human_review_beta.jsx';
 
 // Wrapper component to manage state across the workflow
 function EvaluationWorkflow() {
@@ -99,6 +100,10 @@ function EvaluationWorkflow() {
       <Route
         path="/results"
         element={<ResultsBeta />}
+      />
+      <Route
+        path="/human-review"
+        element={<HumanReviewBeta />}
       />
     </Routes>
   );
