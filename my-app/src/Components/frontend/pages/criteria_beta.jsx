@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckSquare, Square, ChevronDown, ChevronUp } from 'lucide-react';
 import '../styles/styleTestcase_beta.css';
 import '../styles/styleCriteria_beta.css';
+import WorkflowShell from '../layout/WorkflowShell.jsx';
 
 // Default 1-5 rubric descriptions per metric
 const DEFAULT_RUBRICS = {
@@ -87,7 +88,7 @@ export default function CriteriaBeta({ selectedDataset, fieldMappings, judgeMode
   useEffect(() => {
     if (!selectedDataset || !fieldMappings) {
       alert('Please complete previous steps first');
-      navigate('/');
+      navigate('/knowledge');
     }
   }, [selectedDataset, fieldMappings, navigate]);
 
@@ -122,7 +123,7 @@ export default function CriteriaBeta({ selectedDataset, fieldMappings, judgeMode
 
   const handleBack = () => {
     if (onBack) onBack();
-    navigate('/field-mapping');
+    navigate('/eval/field-mapping');
   };
 
   const handleNext = () => {
@@ -150,85 +151,13 @@ export default function CriteriaBeta({ selectedDataset, fieldMappings, judgeMode
     };
 
     if (onNext) onNext(criteriaData);
-    navigate('/review');
+    navigate('/eval/review');
   };
 
   if (!selectedDataset || !fieldMappings) return null;
 
   return (
-    <div className="app-container">
-      {/* Left Sidebar */}
-      <div className="sidebar">
-        <div className="sidebar-header">
-          <div className="logo-container">
-            <div className="logo-icon">AI</div>
-            <span className="logo-text">EvalBot</span>
-          </div>
-        </div>
-
-        <nav className="sidebar-nav">
-          <button className="nav-button nav-button-active">
-            <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Evaluation
-          </button>
-          <button className="nav-button">
-            <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            Settings
-          </button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="version">v1.0.0</div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="main-layout">
-        {/* Stepper */}
-        <div className="stepper-container">
-          <h1 className="page-title">Create New Evaluation</h1>
-
-          <div className="stepper">
-            <div className="step-item">
-              <div className="step-indicator-container">
-                <div className="step-indicator step-indicator-active" style={{backgroundColor: '#10b981'}}>✓</div>
-                <div className="step-connector"></div>
-              </div>
-              <div className="step-label"><div className="step-label-inactive">Test Case Generation</div></div>
-            </div>
-
-            <div className="step-item">
-              <div className="step-indicator-container">
-                <div className="step-indicator step-indicator-active" style={{backgroundColor: '#10b981'}}>✓</div>
-                <div className="step-connector"></div>
-              </div>
-              <div className="step-label"><div className="step-label-inactive">Field Mapping</div></div>
-            </div>
-
-            <div className="step-item">
-              <div className="step-indicator-container">
-                <div className="step-indicator step-indicator-active">3</div>
-                <div className="step-connector"></div>
-              </div>
-              <div className="step-label"><div className="step-label-active">Criteria</div></div>
-            </div>
-
-            <div className="step-item">
-              <div className="step-indicator-container">
-                <div className="step-indicator step-indicator-inactive">4</div>
-              </div>
-              <div className="step-label"><div className="step-label-inactive">Review</div></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Content Area */}
-        <div className="content-area">
+    <WorkflowShell currentStep={3} title="Criteria">
           <div className="content-wrapper">
             <h2 className="section-title">Criteria</h2>
             <p className="radio-description" style={{marginBottom: '1.5rem'}}>
@@ -348,8 +277,6 @@ export default function CriteriaBeta({ selectedDataset, fieldMappings, judgeMode
               <button onClick={handleNext} className="btn-primary">Next</button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </WorkflowShell>
   );
 }

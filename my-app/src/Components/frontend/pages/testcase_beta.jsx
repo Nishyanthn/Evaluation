@@ -1,9 +1,9 @@
-// App.jsx
 import React, { useState } from 'react';
 import { Upload, X, CheckCircle2, FileText, Calendar, User, Sparkles, Trash2, Download, Loader } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import '../styles/styleTestcase_beta.css';
 import { useNavigate } from "react-router-dom";
+import WorkflowShell from '../layout/WorkflowShell.jsx';
 
 
 export default function TestcaseBeta({ onComplete, initialDataset }) {
@@ -275,96 +275,12 @@ export default function TestcaseBeta({ onComplete, initialDataset }) {
     if (onComplete) {
       onComplete(selectedDataset);
     }
-    navigate('/field-mapping');
+    navigate('/eval/field-mapping');
   };
 
   return (
-    <div className="app-container">
-      {/* Left Sidebar */}
-      <div className="sidebar">
-        <div className="sidebar-header">
-          <div className="logo-container">
-            <div className="logo-icon">AI</div>
-            <span className="logo-text">EvalBot</span>
-          </div>
-        </div>
-
-        <nav className="sidebar-nav">
-          <button className="nav-button nav-button-active">
-            <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Evaluation
-          </button>
-          <button className="nav-button">
-            <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            Settings
-          </button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="version">v1.0.0</div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="main-layout">
-        {/* Stepper */}
-        <div className="stepper-container">
-          <h1 className="page-title">Create New Evaluation</h1>
-
-          <div className="stepper">
-            {/* Step 1 - Active */}
-            <div className="step-item">
-              <div className="step-indicator-container">
-                <div className="step-indicator step-indicator-active">1</div>
-                <div className="step-connector"></div>
-              </div>
-              <div className="step-label">
-                <div className="step-label-active">Test Data Generation</div>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="step-item">
-              <div className="step-indicator-container">
-                <div className="step-indicator step-indicator-inactive">2</div>
-                <div className="step-connector"></div>
-              </div>
-              <div className="step-label">
-                <div className="step-label-inactive">Field Mapping</div>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="step-item">
-              <div className="step-indicator-container">
-                <div className="step-indicator step-indicator-inactive">3</div>
-                <div className="step-connector"></div>
-              </div>
-              <div className="step-label">
-                <div className="step-label-inactive">Criteria</div>
-              </div>
-            </div>
-
-            {/* Step 4 */}
-            <div className="step-item">
-              <div className="step-indicator-container">
-                <div className="step-indicator step-indicator-inactive">4</div>
-              </div>
-              <div className="step-label">
-                <div className="step-label-inactive">Review</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Content Area */}
-        <div className="content-area">
-          <div className="content-wrapper">
+    <WorkflowShell currentStep={1} title="Test Data Generation">
+      <div className="content-wrapper">
             <h2 className="section-title">Test Data Generation</h2>
 
             {/* Radio Options */}
@@ -783,8 +699,6 @@ export default function TestcaseBeta({ onComplete, initialDataset }) {
               <button onClick={handleNext} className="btn-primary">Next</button>
             </div>
           </div>
-        </div>
-      </div>
 
       {/* Upload Modal */}
       {uploadModalOpen && (
@@ -837,6 +751,6 @@ export default function TestcaseBeta({ onComplete, initialDataset }) {
           </div>
         </div>
       )}
-    </div>
+    </WorkflowShell>
   );
 }

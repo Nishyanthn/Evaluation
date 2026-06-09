@@ -5,6 +5,7 @@ import {
   Inbox, AlertCircle, MessageSquare, BarChart3
 } from 'lucide-react';
 import '../styles/styleHumanReview_beta.css';
+import PortalLayout from '../layout/PortalLayout.jsx';
 import '../styles/styleTestcase_beta.css';
 
 const SCORE_LABELS = {
@@ -126,20 +127,18 @@ export default function HumanReviewBeta() {
   // ── Empty / loading states ───────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="app-container">
-        <ReviewSidebar navigate={navigate} />
+      <PortalLayout activeSection="knowledge">
         <div className="hr-center">
           <div className="hr-spinner" />
           <p>Loading review queue…</p>
         </div>
-      </div>
+      </PortalLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="app-container">
-        <ReviewSidebar navigate={navigate} />
+      <PortalLayout activeSection="knowledge">
         <div className="hr-center">
           <AlertCircle size={48} color="#ef4444" />
           <h2>Could not load queue</h2>
@@ -147,25 +146,24 @@ export default function HumanReviewBeta() {
           <p style={{color: '#6b7280', fontSize: '0.85rem'}}>Make sure the backend is running on http://localhost:8001</p>
           <button className="btn-primary" onClick={fetchQueue}>Retry</button>
         </div>
-      </div>
+      </PortalLayout>
     );
   }
 
   if (queue.length === 0) {
     return (
-      <div className="app-container">
-        <ReviewSidebar navigate={navigate} />
+      <PortalLayout activeSection="knowledge">
         <div className="hr-center">
           <Inbox size={56} color="#9ca3af" />
           <h2 style={{marginTop: '1rem'}}>No cases to review</h2>
           <p style={{color: '#6b7280'}}>
             Run an evaluation first. Cases that fall in the confidence gray zone will appear here.
           </p>
-          <button className="btn-primary" style={{marginTop: '1rem'}} onClick={() => navigate('/')}>
+          <button className="btn-primary" style={{marginTop: '1rem'}} onClick={() => navigate('/eval/new')}>
             New Evaluation
           </button>
         </div>
-      </div>
+      </PortalLayout>
     );
   }
 
@@ -173,12 +171,10 @@ export default function HumanReviewBeta() {
   const isReviewed = item.review_status === 'reviewed';
 
   return (
-    <div className="app-container">
-      <ReviewSidebar navigate={navigate} />
-
-      <div className="main-layout">
+    <PortalLayout activeSection="knowledge">
+      <div className="hr-page-inner">
         {/* Header bar */}
-        <div className="stepper-container">
+        <div className="hr-header-panel">
           <div className="hr-header-row">
             <div>
               <h1 className="page-title">Human Review Queue</h1>
@@ -408,38 +404,9 @@ export default function HumanReviewBeta() {
             </div>
 
           </div>
-        </div>
       </div>
     </div>
+    </PortalLayout>
   );
 }
 
-function ReviewSidebar({ navigate }) {
-  return (
-    <div className="sidebar">
-      <div className="sidebar-header">
-        <div className="logo-container">
-          <div className="logo-icon">AI</div>
-          <span className="logo-text">EvalBot</span>
-        </div>
-      </div>
-      <nav className="sidebar-nav">
-        <button className="nav-button" onClick={() => navigate('/')}>
-          <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          Evaluation
-        </button>
-        <button className="nav-button nav-button-active">
-          <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Human Review
-        </button>
-      </nav>
-      <div className="sidebar-footer">
-        <div className="version">v1.0.0</div>
-      </div>
-    </div>
-  );
-}
