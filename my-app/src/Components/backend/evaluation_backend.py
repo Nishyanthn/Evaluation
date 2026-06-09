@@ -1025,7 +1025,8 @@ async def submit_review(submission: ReviewSubmission):
 
 
 if __name__ == "__main__":
-    import uvicorn    print("🚀 Starting Evaluation Backend Server...")
+    import uvicorn
+    print("🚀 Starting Evaluation Backend Server...")
     print("📍 http://localhost:8001")
     print("📖 Docs: http://localhost:8001/docs\n")
     uvicorn.run(app, host="0.0.0.0", port=8001)
